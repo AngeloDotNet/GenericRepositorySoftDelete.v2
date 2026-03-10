@@ -5,27 +5,28 @@ using Repository.Api.Repositories.Interfaces;
 
 namespace Repository.Api.Repositories;
 
-public class UnitOfWork(AppDbContext context) : IUnitOfWork, IDisposable
+public class UnitOfWork(AppDbContext context, IServiceProvider serviceProvider) : IUnitOfWork, IDisposable
 {
     private readonly ConcurrentDictionary<Type, object> repositories = new();
 
     public IGenericRepository<T> Repository<T>() where T : BaseEntity
     {
         var type = typeof(T);
-
-        if (!repositories.ContainsKey(type))
+        if (!repositories.TryGetValue(type, out var repoObj))
         {
-            var repoType = typeof(GenericRepository<>).MakeGenericType(type);
-            var repoInstance = Activator.CreateInstance(repoType, context)!;
-
-            repositories[type] = repoInstance;
+            // risolvi il repository generico da DI (in modo che il DI si occupi di fornire le dipendenze)
+            var repo = (IGenericRepository<T>)serviceProvider.GetRequiredService(typeof(IGenericRepository<T>));
+            repositories[type] = repo;
+            repoObj = repo;
         }
 
-        return (IGenericRepository<T>)repositories[type]!;
+        return (IGenericRepository<T>)repoObj!;
     }
 
     public Task<int> SaveChangesAsync()
-        => context.SaveChangesAsync();
+    {
+        return context.SaveChangesAsync();
+    }
 
     public void Dispose()
     {

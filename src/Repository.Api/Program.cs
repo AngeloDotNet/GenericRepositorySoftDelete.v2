@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Repository.Api.Data;
+using Repository.Api.Entities;
+using Repository.Api.Providers;
+using Repository.Api.Providers.Interfaces;
 using Repository.Api.Repositories;
 using Repository.Api.Repositories.Interfaces;
 
@@ -45,10 +48,19 @@ public class Program
             options.EnableSensitiveDataLogging();
         });
 
+        // Configurazione centralizzata delle proprietà ordinabili
+        var sortables = new Dictionary<System.Type, string[]>
+        {
+            [typeof(Product)] = ["Id", "Name", "Price"]
+        };
+
+        builder.Services.AddSingleton<ISortablePropertiesProvider>(new SortablePropertiesProvider(sortables));
+
         // Dependency Injection for Repositories and Unit of Work
         builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+        builder.Services.AddAutoMapper(typeof(MappingProfile));
         builder.Services.AddCors(options =>
         {
             options.AddDefaultPolicy(builder =>

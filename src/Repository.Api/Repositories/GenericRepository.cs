@@ -61,10 +61,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
 
     public virtual async Task<PagedResult<T>> GetPagedAsync(QueryParameters parameters, Expression<Func<T, bool>>? filter = null)
     {
-        if (parameters == null)
-        {
-            throw new ArgumentNullException(nameof(parameters));
-        }
+        ArgumentNullException.ThrowIfNull(parameters);
 
         var query = _dbSet.AsQueryable();
         if (filter != null)
@@ -77,7 +74,8 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
         // Validazione sortBy usando provider centralizzato
         if (!string.IsNullOrWhiteSpace(parameters.SortBy))
         {
-            var allowed = sortableProvider.GetSortableProperties(typeof(T)).Select(s => s.ToLowerInvariant()).ToHashSet();
+            var allowed = sortableProvider.GetSortableProperties(typeof(T))
+                .Select(s => s.ToLowerInvariant()).ToHashSet();
 
             if (!allowed.Contains(parameters.SortBy.ToLowerInvariant()))
             {
@@ -87,7 +85,8 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
 
             // usa EF.Property con il nome esatto tra quelli consentiti (case-sensitive sul nome reale)
             // trova il nome corretto (case-preserving)
-            var exact = sortableProvider.GetSortableProperties(typeof(T)).FirstOrDefault(s => string.Equals(s, parameters.SortBy, StringComparison.OrdinalIgnoreCase))!;
+            var exact = sortableProvider.GetSortableProperties(typeof(T))
+                .FirstOrDefault(s => string.Equals(s, parameters.SortBy, StringComparison.OrdinalIgnoreCase))!;
 
             query = parameters.Desc
                 ? query.OrderByDescending(e => EF.Property<object>(e, exact))

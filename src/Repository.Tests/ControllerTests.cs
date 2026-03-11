@@ -4,6 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Repository.Api.Controllers;
 using Repository.Api.Data;
 using Repository.Api.Entities;
+using Repository.Api.Mapping;
+using Repository.Api.Providers;
+using Repository.Api.Providers.Interfaces;
 using Repository.Api.Repositories;
 using Repository.Api.Repositories.Interfaces;
 
@@ -18,7 +21,7 @@ public class ControllerTests
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-        var map = new System.Collections.Generic.Dictionary<Type, string[]>
+        var map = new Dictionary<Type, string[]>
         {
             [typeof(Product)] = ["Id", "Name", "Price"]
         };

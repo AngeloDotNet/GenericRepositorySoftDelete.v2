@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Repository.Api.Data;
 using Repository.Api.Entities;
+using Repository.Api.Mapping;
 using Repository.Api.Providers;
 using Repository.Api.Providers.Interfaces;
 using Repository.Api.Repositories;

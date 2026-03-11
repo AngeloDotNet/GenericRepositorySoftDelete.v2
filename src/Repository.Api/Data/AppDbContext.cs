@@ -12,8 +12,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
-
         // Applica global query filter a tutte le entità che implementano ISoftDelete
         var softDeleteInterface = typeof(ISoftDelete);
         var entityTypes = modelBuilder.Model.GetEntityTypes()
@@ -24,11 +22,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             // costruisci lambda: (e) => EF.Property<bool>(e, "IsDeleted") == false
             var parameter = Expression.Parameter(type, "e");
-            var prop = Expression.Property(parameter, nameof(ISoftDelete.IsDeleted));
-            var condition = Expression.Lambda(Expression.Equal(prop, Expression.Constant(false)), parameter);
 
-            modelBuilder.Entity(type).HasQueryFilter(condition);
+            var prop = Expression.PropertyOrField(parameter, nameof(ISoftDelete.IsDeleted));
+            var body = Expression.Equal(prop, Expression.Constant(false));
+
+            var delegateType = typeof(Func<,>).MakeGenericType(type, typeof(bool));
+            var lambda = Expression.Lambda(delegateType, body, parameter);
+            modelBuilder.Entity(type).HasQueryFilter(lambda);
         }
+
+        base.OnModelCreating(modelBuilder);
     }
 
     public override int SaveChanges()
@@ -49,7 +52,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             if (entry.Entity is ISoftDelete sd)
             {
-                // converti in soft delete
                 sd.IsDeleted = true;
                 sd.DeletedAt = DateTime.UtcNow;
                 entry.State = EntityState.Modified;

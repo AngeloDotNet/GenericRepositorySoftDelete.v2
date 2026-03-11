@@ -1,18 +1,20 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using Repository.Api.DTOs;
 using Repository.Api.Entities;
-using Repository.Api.Providers.Interfaces;
+using Repository.Api.Repositories;
 using Repository.Api.Repositories.Interfaces;
 
 namespace Repository.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ProductsController(IUnitOfWork uow, IMapper mapper, ISortablePropertiesProvider sortableProvider) : ControllerBase
+public class ProductsController(IUnitOfWork uow, IMapper mapper) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] QueryParameters qp)
     {
+        // Model validation (paging params)
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
@@ -22,6 +24,7 @@ public class ProductsController(IUnitOfWork uow, IMapper mapper, ISortableProper
         {
             var repo = uow.Repository<Product>();
             var paged = await repo.GetPagedAsync(qp);
+
             var dtoItems = paged.Items.Select(p => mapper.Map<ProductDto>(p));
             var result = new PagedResult<ProductDto>(dtoItems, paged.TotalCount, paged.Page, paged.PageSize);
 
@@ -29,15 +32,9 @@ public class ProductsController(IUnitOfWork uow, IMapper mapper, ISortableProper
         }
         catch (ArgumentException ex)
         {
+            // errore dovuto a sortBy non valido o parametri errati
             return BadRequest(new { error = ex.Message });
         }
-    }
-
-    [HttpGet("sortables")]
-    public IActionResult GetSortables()
-    {
-        var list = sortableProvider.GetSortableProperties<Product>();
-        return Ok(list);
     }
 
     [HttpGet("{id:int}")]
@@ -45,6 +42,7 @@ public class ProductsController(IUnitOfWork uow, IMapper mapper, ISortableProper
     {
         var repo = uow.Repository<Product>();
         var product = await repo.GetByIdAsync(id);
+
         if (product is null)
         {
             return NotFound();
@@ -58,6 +56,7 @@ public class ProductsController(IUnitOfWork uow, IMapper mapper, ISortableProper
     {
         var repo = uow.Repository<Product>();
         var entity = mapper.Map<Product>(dto);
+
         await repo.AddAsync(entity);
         await uow.SaveChangesAsync();
 
@@ -86,13 +85,12 @@ public class ProductsController(IUnitOfWork uow, IMapper mapper, ISortableProper
     {
         var repo = uow.Repository<Product>();
         var product = await repo.GetByIdAsync(id);
-
         if (product is null)
         {
             return NotFound();
         }
 
-        await repo.DeleteAsync(product);
+        await repo.DeleteAsync(product); // soft delete
         await uow.SaveChangesAsync();
 
         return NoContent();

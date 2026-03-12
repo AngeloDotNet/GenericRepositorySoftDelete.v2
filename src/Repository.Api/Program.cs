@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Repository.Api.Data;
-using Repository.Api.Entities;
 using Repository.Api.Mapping;
 using Repository.Api.Providers;
 using Repository.Api.Providers.Interfaces;
@@ -22,16 +21,6 @@ public class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
-        //builder.Services.AddCors(options =>
-        //{
-        //    options.AddDefaultPolicy(builder =>
-        //    {
-        //        builder.AllowAnyOrigin();
-        //        builder.AllowAnyHeader();
-        //        builder.AllowAnyMethod();
-        //    });
-        //});
-
         builder.Services.AddDbContext<AppDbContext>(options =>
         {
             var sqlConnection = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -49,13 +38,13 @@ public class Program
             options.EnableSensitiveDataLogging();
         });
 
-        // Configurazione centralizzata delle proprietà ordinabili
-        var sortables = new Dictionary<System.Type, string[]>
-        {
-            [typeof(Product)] = ["Id", "Name", "Price"]
-        };
+        // Legge la sezione SortableProperties in appsettings.json
+        // la sezione deve essere un oggetto la cui chiave è il nome dell'entità e il valore è un array di proprietà
+        var sortablesConfig = builder.Configuration.GetSection("SortableProperties")
+            .Get<Dictionary<string, string[]>>() ?? new Dictionary<string, string[]>();
 
-        builder.Services.AddSingleton<ISortablePropertiesProvider>(new SortablePropertiesProvider(sortables));
+        // registra il provider come singleton
+        builder.Services.AddSingleton<ISortablePropertiesProvider>(new SortablePropertiesProvider(sortablesConfig));
 
         // Dependency Injection for Repositories and Unit of Work
         builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));

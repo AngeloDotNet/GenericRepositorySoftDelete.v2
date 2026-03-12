@@ -21,9 +21,9 @@ public class ControllerTests
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-        var map = new Dictionary<Type, string[]>
+        var map = new Dictionary<string, string[]>
         {
-            [typeof(Product)] = ["Id", "Name", "Price"]
+            [typeof(Product).ToString()] = ["Id", "Name", "Price"]
         };
         services.AddSingleton<ISortablePropertiesProvider>(new SortablePropertiesProvider(map));
 

@@ -11,9 +11,9 @@ public class RepositoryTests
 {
     private ISortablePropertiesProvider MakeProvider()
     {
-        var map = new Dictionary<Type, string[]>
+        var map = new Dictionary<string, string[]>
         {
-            [typeof(Product)] = ["Id", "Name", "Price"]
+            [typeof(Product).ToString()] = ["Id", "Name", "Price"]
         };
         return new SortablePropertiesProvider(map);
     }
